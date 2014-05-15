@@ -277,6 +277,7 @@ COMPRT_DEPS := $(wildcard \
               $(S)src/compiler-rt/*/* \
               $(S)src/compiler-rt/*/*/* \
               $(S)src/compiler-rt/*/*/*/*)
+
 endif
 
 COMPRT_NAME_$(1) := $$(call CFG_STATIC_LIB_NAME_$(1),compiler-rt)
