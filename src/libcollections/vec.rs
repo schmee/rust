@@ -991,6 +991,52 @@ impl<T> Vec<T> {
         }
     }
 
+    /// Inserts all elements at position `index` within the vector, shifting all
+    /// elements after position `index` `elements.len()` positions to the right.
+    /// This is the prefered way to insert several elements since it avoids
+    /// repeated allocations.
+    ///
+    /// # Failure
+    ///
+    /// Fails if `index` is not between `0` and the vector's length (both
+    /// bounds inclusive).
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// let mut v = vec![1i, 2 ,3];
+    /// let mut w = vec![1i, 2 ,3];
+    ///
+    /// v.insert_all(1u, [4i,5,6]);
+    /// w.insert(1,6i);
+    /// w.insert(1,5i);
+    /// w.insert(1,4i);
+    ///
+    /// assert_eq!(v, w);
+    /// ```
+    pub fn insert_all(&mut self, index: uint, elements: &[T]) {
+        let len = self.len();
+        let amount = elements.len();
+        assert!(index <= len);
+        // space for the new elements
+        self.reserve(len + amount);
+
+        unsafe { // infallible
+            // The spot to put the new values
+            {
+                let p = self.as_mut_ptr().offset(index as int);
+                let new = elements.as_ptr();
+                // Shift everything over to make space. (Duplicating all the
+                // elements from `index` to `index + amount`).
+                ptr::copy_memory(p.offset(amount as int), &*p, len - index);
+                // Write the new elements, overwriting the the elements from
+                // `index` to `index + amount`.
+                ptr::copy_memory(p, &*new, amount);
+            }
+            self.set_len(len + amount);
+        }
+    }
+
     /// Remove and return the element at position `index` within the vector,
     /// shifting all elements after position `index` one position to the left.
     /// Returns `None` if `i` is out of bounds.
@@ -1629,6 +1675,19 @@ mod tests {
 
         v.reserve_additional(16);
         assert!(v.capacity() >= 33)
+    }
+
+    #[test]
+    fn test_insert_all() {
+        let mut v = vec![1i, 2 ,3];
+        let mut w = vec![1i, 2 ,3];
+
+        v.insert_all(1u, [4i,5,6]);
+        w.insert(1,6i);
+        w.insert(1,5i);
+        w.insert(1,4i);
+
+        assert_eq!(v, w);
     }
 
     #[test]
